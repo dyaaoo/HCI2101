@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لعبة XO - Lab 2</title>
+<style>
+    body {
+        font-family: "Tahoma", sans-serif;
+        background: linear-gradient(135deg, #4c8bf5, #6ad1f5);
+        margin: 0;
+        padding: 0;
+        text-align: center;
+        color: #fff;
+    }
+
+    .container {
+        margin-top: 40px;
+    }
+
+    .screen {
+        display: none;
+    }
+
+    .active {
+        display: block;
+    }
+
+    input {
+        padding: 10px;
+        width: 250px;
+        border-radius: 8px;
+        border: none;
+        margin: 10px;
+        font-size: 18px;
+    }
+
+    button {
+        padding: 12px 25px;
+        font-size: 20px;
+        border: none;
+        border-radius: 10px;
+        background: #fff;
+        color: #333;
+        cursor: pointer;
+        margin: 10px;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        background: #e3e3e3;
+    }
+
+    .board {
+        display: grid;
+        grid-template-columns: repeat(3, 120px);
+        grid-gap: 10px;
+        justify-content: center;
+        margin-top: 30px;
+    }
+
+    .cell {
+        width: 120px;
+        height: 120px;
+        background: #ffffff;
+        color: #333;
+        font-size: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 15px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .cell:hover {
+        background: #f0f0f0;
+    }
+
+    .scoreboard {
+        margin-top: 20px;
+        font-size: 22px;
+        background: rgba(0,0,0,0.3);
+        padding: 10px;
+        border-radius: 10px;
+        display: inline-block;
+    }
+
+    /* شاشة الفوز */
+    .win-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.75);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        color: #fff;
+        font-size: 40px;
+        z-index: 999;
+    }
+
+    .win-screen button {
+        margin-top: 20px;
+        font-size: 22px;
+    }
+
+    footer {
+        margin-top: 40px;
+        padding: 15px;
+        background: rgba(0,0,0,0.3);
+        font-size: 18px;
+        border-top: 2px solid #fff;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- شاشة البداية -->
+    <div id="startScreen" class="screen active">
+        <h1>لعبة XO</h1>
+        <p>أدخل أسماء اللاعبين</p>
+
+        <input id="player1" placeholder="اسم اللاعب الأول">
+        <input id="player2" placeholder="اسم اللاعب الثاني (اختياري)">
+
+        <br>
+        <button onclick="startGame()">ابدأ اللعبة</button>
+    </div>
+
+    <!-- شاشة اللعبة -->
+    <div id="gameScreen" class="screen">
+        <h2 id="turnText"></h2>
+
+        <div class="scoreboard">
+            <span id="score1">0</span> : نقاط  
+            <span id="score2">0</span>
+        </div>
+
+        <div class="board" id="board"></div>
+
+        <button onclick="restart()">إعادة الجولة</button>
+    </div>
+
+</div>
+
+<!-- شاشة الفوز -->
+<div id="winScreen" class="win-screen">
+    <div id="winMessage"></div>
+    <button onclick="closeWinScreen()">متابعة</button>
+</div>
+
+<footer>
+    Student Name: Dyaa Mohammed Said Hawsawy (ضياء محمد سعيد الهوساوي) <br>
+    Student ID: 441009753 <br>
+    Supervised by: Mohammed Ahmed Jabali
+</footer>
+
+<script>
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let currentPlayer = "X";
+    let gameActive = true;
+    let p1 = "";
+    let p2 = "";
+    let vsComputer = false;
+
+    let score1 = 0;
+    let score2 = 0;
+
+    function startGame() {
+        p1 = document.getElementById("player1").value || "اللاعب 1";
+        p2 = document.getElementById("player2").value;
+
+        if (p2.trim() === "") {
+            vsComputer = true;
+            p2 = "الكمبيوتر";
+        }
+
+        document.getElementById("startScreen").classList.remove("active");
+        document.getElementById("gameScreen").classList.add("active");
+
+        updateTurnText();
+        drawBoard();
+    }
+
+    function updateTurnText() {
+        document.getElementById("turnText").innerText =
+            currentPlayer === "X" ? `دور: ${p1}` : `دور: ${p2}`;
+    }
+
+    function drawBoard() {
+        const boardDiv = document.getElementById("board");
+        boardDiv.innerHTML = "";
+
+        board.forEach((cell, index) => {
+            const div = document.createElement("div");
+            div.classList.add("cell");
+            div.innerText = cell;
+            div.onclick = () => handleMove(index);
+            boardDiv.appendChild(div);
+        });
+    }
+
+    function handleMove(index) {
+        if (!gameActive || board[index] !== "") return;
+
+        board[index] = currentPlayer;
+        drawBoard();
+
+        if (checkWin()) {
+            showWinScreen(currentPlayer === "X" ? p1 : p2);
+            updateScore(currentPlayer);
+            gameActive = false;
+            return;
+        }
+
+        if (!board.includes("")) {
+            showWinScreen("تعادل!");
+            gameActive = false;
+            return;
+        }
+
+        currentPlayer = currentPlayer === "X" ? "O" : "X";
+        updateTurnText();
+
+        if (vsComputer && currentPlayer === "O") {
+            setTimeout(computerMove, 500);
+        }
+    }
+
+    function computerMove() {
+        let emptyCells = board.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+        let randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+
+        board[randomIndex] = "O";
+        drawBoard();
+
+        if (checkWin()) {
+            showWinScreen(p2);
+            updateScore("O");
+            gameActive = false;
+            return;
+        }
+
+        currentPlayer = "X";
+        updateTurnText();
+    }
+
+    function checkWin() {
+        const wins = [
+            [0,1,2], [3,4,5], [6,7,8],
+            [0,3,6], [1,4,7], [2,5,8],
+            [0,4,8], [2,4,6]
+        ];
+
+        return wins.some(combo =>
+            board[combo[0]] &&
+            board[combo[0]] === board[combo[1]] &&
+            board[combo[1]] === board[combo[2]]
+        );
+    }
+
+    function updateScore(player) {
+        if (player === "X") score1++;
+        else score2++;
+
+        document.getElementById("score1").innerText = score1;
+        document.getElementById("score2").innerText = score2;
+    }
+
+    function showWinScreen(winner) {
+        document.getElementById("winMessage").innerText = `الفائز: ${winner}`;
+        document.getElementById("winScreen").style.display = "flex";
+    }
+
+    function closeWinScreen() {
+        document.getElementById("winScreen").style.display = "none";
+        restart();
+    }
+
+    function restart() {
+        board = ["", "", "", "", "", "", "", "", ""];
+        currentPlayer = "X";
+        gameActive = true;
+        updateTurnText();
+        drawBoard();
+    }
+</script>
+
+</body>
+</html>
