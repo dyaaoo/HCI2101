@@ -1,0 +1,23 @@
+/* خلفية الصفحة */
+body {
+    background-color: #e8f4ff;
+    font-family: Tahoma, Arial;
+}
+
+/* تنسيق الفقرات */
+p {
+    color: #333;
+    font-size: 18px;
+}
+
+/* class selector */
+.title {
+    color: darkblue;
+    font-size: 24px;
+}
+
+/* id selector */
+#mainHeader {
+    font-size: 32px;
+    color: navy;
+}
